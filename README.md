@@ -1,2 +1,3 @@
-# test repository git hub
-# test number 2
+# This project aims to develop a vision system that can detect whether or not the hand is in contact with the handrim during wheelchair propulsion.
+# Different measuring system are being used apart from the camera, we have a wheelchair ergometer as well as a measuring wheel.
+# Previously the ground truth for contact to actually compare the vision system output was done with the torque extracted from the ergometer. The current challenge is to switch this ground truth with the signal coming from a capacitive sleeve around the handrim, which we believe is more reliable and more accurate than the previous one. 
