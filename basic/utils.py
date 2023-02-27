@@ -4,47 +4,38 @@ import numpy as np
 import timer
 
 def test_import():
-    '''
-    To simply test the import
-
-    Returns
-    -------
-    None.
-
-    '''
+    '''To simply test the import'''
     print('import of BASIC package successfull!')
 
-def is_list(input):
-    return(isinstance(input,list))
+def is_list(inp):
+    return(isinstance(inp,list))
 
-def is_npArray(input):
-    return(isinstance(input,np.ndarray))
+def is_npArray(inp):
+    return(isinstance(inp,np.ndarray))
 
-def is_listOfList(input):
-    '''execution time: around 360 ms, not depending on length of array'''
-    if input == []:
+def is_listOfList(inp):
+    if inp == []:
         return False
-    return is_list(input) and all(isinstance(el, list) for el in input)
+    return is_list(inp) and all(isinstance(el, list) for el in inp)
 
-def is_listOfNpArray(input):
-    '''execution time: around 450 ms, not depending on length of array'''
-    if input == []:
+def is_listOfNpArray(inp):
+    if inp == []:
         return False
-    return is_list(input) and all(isinstance(el, np.ndarray) for el in input)
+    return is_list(inp) and all(isinstance(el, np.ndarray) for el in inp)
 
-def is_list_containing_lists_or_npArray(input):
-    if input == []:
+def is_list_containing_lists_or_npArray(inp):
+    if inp == []:
         return False
-    return is_list(input) and all(isinstance(el, list) or isinstance(el, np.ndarray) 
-                                  for el in input)
+    return is_list(inp) and all(isinstance(el, list) or isinstance(el, np.ndarray) 
+                                  for el in inp)
 
-def is_npArray_containing_npArray(input):
-    return is_npArray(input) and all(isinstance(el, np.ndarray) for el in input)
+def is_npArray_containing_npArray(inp):
+    return is_npArray(inp) and all(isinstance(el, np.ndarray) for el in inp)
 
-def is_emptyList_or_emptyNpArray(input):
-    if is_list(input) and input != []:
+def is_emptyList_or_emptyNpArray(inp):
+    if is_list(inp) and inp != []:
         return False
-    elif is_npArray(input) and np.any(input):
+    elif is_npArray(inp) and np.any(inp):
         return False
     else:
         return True
@@ -55,30 +46,30 @@ def get_length(arrayOrScalar):
     else:
         return len(arrayOrScalar)
 
-def make_list(input):
-    if not isinstance(input, list):
-        return [input]
+def make_list(inp):
+    if not isinstance(inp, list):
+        return [inp]
     else:
-        return input
+        return inp
 
-def make_listOfList(input):
-    if not (is_listOfList(input)):
-        return [input]
+def make_listOfList(inp):
+    if not (is_listOfList(inp)):
+        return [inp]
     else:
-        return input
+        return inp
 
-def make_listOfNpArray(input):
-    if not (is_listOfNpArray(input)):
-        return [input]
+def make_listOfNpArray(inp):
+    if not (is_listOfNpArray(inp)):
+        return [inp]
     else:
-        return input
+        return inp
 
-def make_listOfList_or_listOfNpArray(input):
-    if not (is_listOfList(input) or is_listOfNpArray(input) or 
-            is_list_containing_lists_or_npArray(input)):
-        return [input]
+def make_listOfList_or_listOfNpArray(inp):
+    if not (is_listOfList(inp) or is_listOfNpArray(inp) or 
+            is_list_containing_lists_or_npArray(inp)):
+        return [inp]
     else:
-        return input
+        return inp
 
 def list_files_in_this_dir(directory):
     '''
@@ -130,7 +121,8 @@ def list_dirs_in_this_dir(directory):
 
 def list_dirs_deep_this_dir(directory, maxDepth):
     '''
-    Iterates inside the directories of directory until maxDepth is reached and returns a list containing the complete path to all the found directories
+    Iterates inside the directories of directory until maxDepth is reached and 
+    returns a list containing the complete path to all the found directories
     '''
     search_dirs = make_list(directory)
     found_dirs = []
@@ -486,7 +478,7 @@ def write_rows_csv(CSVfile, rows, mode = 'a'):
     f.close()
     
 def chose_option_list(listOfOptions):
-    
+    ''' Given a list of options, displays them and asks for the index of the corresponding one'''
     for i, opt in zip(range(len(listOfOptions)), listOfOptions):
         print('{:02d} - {}'.format(i, opt))
     print('{:02d} - {}'.format(-1, 'None')) 
