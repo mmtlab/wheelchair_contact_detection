@@ -1,5 +1,5 @@
 
-#Wheelchair handrim contact detection
+# Wheelchair handrim contact detection
 This project aims to the development of a vision system that can detect whether or not the hand is in contact with the handrim during wheelchair propulsion.
 
 It's a further implementation of the work "HPPD" in which the hand position wrt handrim was expressed using mediapipe and contact was assessed by means of torque signal collected by the ergometer.
