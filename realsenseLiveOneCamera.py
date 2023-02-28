@@ -34,15 +34,10 @@ rgb_freq = 60
 w = 848
 h = 480
 # to write on the image
-# font
 font = cv2.FONT_HERSHEY_SIMPLEX
-# org
 org = (50, 50)
-# fontScale
 fontScale = 1
-# Blue color in BGR
-color = (255, 0, 0)
-# Line thickness of 2 px
+color = (255, 0, 0) #BGR format
 thickness = 2
 # ------------------------------ #
 
@@ -127,7 +122,7 @@ try:
             cv2.imshow('RealSense', images)
             cv2.waitKey(1)
         
-        # Saves images and depth maps from both cameras by pressing 's'
+        # saves images and depth maps from both cameras by pressing 's'
         if keyboard.is_pressed("s"):
             cv2.imwrite("realsenseLive_rgb.png",color_image)
             cv2.imwrite("realsenseLive_dep.png",depth_image)
