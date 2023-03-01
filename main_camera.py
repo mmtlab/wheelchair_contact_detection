@@ -47,10 +47,10 @@ for i in range(NumberOfFrames):
     color_image_rgb = np.asanyarray(color_frame.get_data())
     depth_image = np.asanyarray(depth_frame.get_data())
     #get the hand landmarks
-    hand_lm=findregion.GetHandLandmarks(color_image_rgb,x_resolution,y_resolution)
+    hand_lm=findregion.gethandlandmarks(color_image_rgb,x_resolution,y_resolution)
     lm_lst.append(hand_lm)
     #get the hand position
-    x_h,y_h,z_h=findregion.AverageHandPosition(hand_lm,depth_image)
+    x_h,y_h,z_h=findregion.averagehandposition(hand_lm,depth_image)
     
     
 end=time.time()  

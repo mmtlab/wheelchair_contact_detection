@@ -7,7 +7,7 @@ Created on Mon Feb 27 15:25:09 2023
 
 import rosbag
 # please refer to http://docs.ros.org/en/lunar/api/rosbag/html/python/rosbag.bag.Bag-class.html
-filename = r'C:\Users\eferlius\Desktop\20230217_133916.bag'
+filename = r'D:\01_raw\T002.bag'
 
 bag = rosbag.Bag(filename)
 
@@ -25,7 +25,7 @@ for topic, msg, t in bag.read_messages():
 bag.close()
 
 
-from rosbags.rosbag2 import Reader
+from rosbag.rosbag2 import Reader
 from rosbags.serde import deserialize_cdr
 
 # create reader instance and open for reading

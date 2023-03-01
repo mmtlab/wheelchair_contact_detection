@@ -4,7 +4,7 @@ save_data_on_exit = True
 save_history = True
 save_non_project_files = False
 project_type = 'empty-project-type'
-recent_files = ['main_camera.py', 'hppdWC\\runMP.py', 'findCircleHrPlane.py', 'hppdWC\\analysis.py', 'hppdWC\\geom.py', 'realsenseLiveOneCamera.py']
+recent_files = ['bagFileAnalyzer_bagpy.py']
 
 [main]
 version = 0.2.0
