@@ -11,8 +11,8 @@ import time
 import hppdWC
 start=time.time()
 
-fileCompleteName=r'D:\01_raw\T001.bag'
-NumberOfFrames=10 #usually 20000 for a full acquisition
+fileCompleteName=r'D:\01_raw\T017S03BnrC3r.bag'
+NumberOfFrames=20000 #usually 20000 for a full acquisition
 x_resolution=640
 y_resolution=480
 rgblist=[]
@@ -46,7 +46,16 @@ for i in range(NumberOfFrames):
     color_frame = frame.get_color_frame()
     color_image_rgb = np.asanyarray(color_frame.get_data())
     depth_image = np.asanyarray(depth_frame.get_data())
-    #get the hand landmarks
+    #get the camera intrinsic parameters
+    if i == 0:
+        # load intrinsic params of camera and find the wheel centre as well as the plane on which the wheel stands
+        camera_intrinsics = color_frame.profile.as_video_stream_profile().intrinsics
+        ppx = camera_intrinsics.ppx
+        ppy = camera_intrinsics.ppy
+        fx = camera_intrinsics.fx
+        fy = camera_intrinsics.fy
+        wc_img, hrc_img, centre_metric, handrimPlane, dataPlane = hppdWC.analysis.findWheelCentreAndHandrim(color_image_rgb,depth_image,ppx,ppy,fx,fy)
+    #get the hand landmarks and stores them in lm_lst for each frame
     hand_lm=findregion.gethandlandmarks(color_image_rgb,x_resolution,y_resolution)
     lm_lst.append(hand_lm)
     #get the hand position
