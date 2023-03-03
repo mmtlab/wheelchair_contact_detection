@@ -106,7 +106,7 @@ def averagehandposition(handlm,depthframe):
        ymax=max(ymaxlist)
        xh=int((xmax + xmin)/2)
        yh=int((ymax + ymin)/2)
-       zh=depthframe[yh][xh]
+       zh=int(depthframe[yh][xh])
     else:  #if the landmark list is empty assign NaN to each coordinate
        xh='NaN'
        yh='NaN'

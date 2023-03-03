@@ -9,6 +9,8 @@ import pyrealsense2 as rs
 import findregion
 import time
 import hppdWC
+import fromcartesiantocylndrical
+import transform
 start=time.time()
 
 fileCompleteName=r'D:\01_raw\T017S03BnrC3r.bag'
@@ -19,6 +21,7 @@ rgblist=[]
 lm_lst=[]
 x_hList=[]
 y_hList=[]
+hand_cyl_coord_lst=[]
 #start the pipeline and setup the configuration to read the .bag file
 pipeline = rs.pipeline()
 config = rs.config()
@@ -49,19 +52,29 @@ for i in range(NumberOfFrames):
     #get the camera intrinsic parameters
     if i == 0:
         # load intrinsic params of camera and find the wheel centre as well as the plane on which the wheel stands
+        # extract rotation of the new frame compared to the absolute one
         camera_intrinsics = color_frame.profile.as_video_stream_profile().intrinsics
         ppx = camera_intrinsics.ppx
         ppy = camera_intrinsics.ppy
         fx = camera_intrinsics.fx
         fy = camera_intrinsics.fy
         wc_img, hrc_img, centre_metric, handrimPlane, dataPlane = hppdWC.analysis.findWheelCentreAndHandrim(color_image_rgb,depth_image,ppx,ppy,fx,fy)
+        rot, rmsd, sens=hppdWC.geom.rotMatrixToFitPlaneWRTimg(handrimPlane,centre_metric)
     #get the hand landmarks and stores them in lm_lst for each frame
     hand_lm=findregion.gethandlandmarks(color_image_rgb,x_resolution,y_resolution)
     lm_lst.append(hand_lm)
     #get the hand position
-    x_h,y_h,z_h=findregion.averagehandposition(hand_lm,depth_image)
-    
-    
+    xh,yh,zh=findregion.averagehandposition(hand_lm,depth_image)
+    hand_coordinates_camera=[xh,yh,zh]
+    #transform the hand coordinates to the wheel plane frame
+    if hand_coordinates_camera[0] != 'NaN':
+        # transform
+        hand_coordinates_hrplane=transform.changeRefFrameTR(hand_coordinates_camera, centre_metric, rot)
+        #transform the hand coordinates from cartesian to cylindrical
+        hand_cyl_coordinates=fromcartesiantocylndrical.fromCartToCylindricalCoordinates(hand_coordinates_hrplane)
+        hand_cyl_coord_lst.append(hand_cyl_coordinates)
+    else:
+        hand_cyl_coord_lst.append('NaN')
 end=time.time()  
-# print(start,end)
+print(start,end)
 pipeline.stop()
