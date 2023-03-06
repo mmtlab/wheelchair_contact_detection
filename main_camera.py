@@ -11,6 +11,7 @@ import time
 import hppdWC
 import fromcartesiantocylndrical
 import transform
+
 start=time.time()
 
 fileCompleteName=r'D:\01_raw\T017S03BnrC3r.bag'
@@ -60,21 +61,26 @@ for i in range(NumberOfFrames):
         fy = camera_intrinsics.fy
         wc_img, hrc_img, centre_metric, handrimPlane, dataPlane = hppdWC.analysis.findWheelCentreAndHandrim(color_image_rgb,depth_image,ppx,ppy,fx,fy)
         rot, rmsd, sens=hppdWC.geom.rotMatrixToFitPlaneWRTimg(handrimPlane,centre_metric)
-    #get the hand landmarks and stores them in lm_lst for each frame
+    #get the hand landmarks and stores them in lm_lst for each frame with a different configuration for better csv writing
     hand_lm=findregion.gethandlandmarks(color_image_rgb,x_resolution,y_resolution)
-    lm_lst.append(hand_lm)
+    hand_lm_buffer=findregion.changehandlandmarkStructure(hand_lm)
+    lm_lst.append(hand_lm_buffer)
     #get the hand position
     xh,yh,zh=findregion.averagehandposition(hand_lm,depth_image)
     hand_coordinates_camera=[xh,yh,zh]
     #transform the hand coordinates to the wheel plane frame
-    if hand_coordinates_camera[0] != 'NaN':
+    if hand_coordinates_camera[0] != np.nan:
         # transform
         hand_coordinates_hrplane=transform.changeRefFrameTR(hand_coordinates_camera, centre_metric, rot)
         #transform the hand coordinates from cartesian to cylindrical
         hand_cyl_coordinates=fromcartesiantocylndrical.fromCartToCylindricalCoordinates(hand_coordinates_hrplane)
         hand_cyl_coord_lst.append(hand_cyl_coordinates)
     else:
-        hand_cyl_coord_lst.append('NaN')
+        hand_cyl_coord_lst.append(np.nan)
+        
+#saves the landmark list for each frame to a csv file in the current project directory
+findregion.savelandmarkstoCSVfile(fileCompleteName, lm_lst)
+findregion.savehandcoordinates(fileCompleteName, hand_cyl_coord_lst)
 end=time.time()  
-print(start,end)
+print(end-start)
 pipeline.stop()

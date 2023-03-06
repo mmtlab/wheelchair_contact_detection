@@ -9,6 +9,8 @@ import mediapipe as mp
 import cv2
 import numpy as np
 import sys
+import pandas as pd
+import csv
 
 
 
@@ -108,8 +110,86 @@ def averagehandposition(handlm,depthframe):
        yh=int((ymax + ymin)/2)
        zh=int(depthframe[yh][xh])
     else:  #if the landmark list is empty assign NaN to each coordinate
-       xh='NaN'
-       yh='NaN'
-       zh='NaN'    
-    return xh,yh,zh   
+       xh=np.nan
+       yh=np.nan
+       zh=np.nan    
+    return xh,yh,zh 
 
+def changehandlandmarkStructure(hand_lm):
+    '''
+    Changes the structure of the array to a monodimensional list with the following structure:
+    [x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
+
+    Parameters
+    ----------
+    hand_lm : array
+        contains the landmark coordinates with the following structure[[wrist][thumb][index][middle][ring][pinky]]..
+
+    Returns
+    -------
+    row : list
+    contains the landmark coordinates with the different structure
+
+    '''
+    row=[]
+    if not hand_lm==[]:
+         for i in range(6):
+             finger_buffer=hand_lm[i]
+             x_buffer=finger_buffer[0]
+             y_buffer=finger_buffer[1]
+             for j in range(len(x_buffer)):
+                 row.append(x_buffer[j])
+                 row.append(y_buffer[j])
+    else:
+        row.append(np.nan)
+    return row
+
+def savelandmarkstoCSVfile(filecompletepath, landmarklist):
+    '''
+    Given a landmark list containing their coordinates, creates a csv file containing the data for each frame.
+
+    Parameters
+    ----------
+    filename : string
+        The path of the test we are currently examining.
+    landmarklist : list
+        Contains the x and y of each landmark of the hand with the structure [x0,y0,x1,y1,etc..]
+
+    Returns
+    -------
+    writer : writer object
+        
+    '''
+    filename=filecompletepath[-17:-4]+'_landmarks.csv'
+    for i in range(len(landmarklist)):
+        landmarklist[i].insert(0,i)
+    header=["frame","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
+    with open(filename,'w',encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(landmarklist)
+    return writer
+
+def savehandcoordinates(filecompletepath,handcoordlst):
+    '''
+    Given the hand coordinates list, creates a csv file in which each rows represent the coordinates for each frame.
+
+    Parameters
+    ----------
+    handcoordlst : list
+        Contains the cylindrical coordinates of the hand position.
+
+    Returns
+    -------
+    writer : writer object
+    
+    '''
+    filename=filecompletepath[-17:-4]+'_handposition.csv'
+    for i in range(len(handcoordlst)):
+        handcoordlst[i].insert(0,i)
+    header=["frame","RadDistance[m]","Angle[rad]","NormDistance[m]"]
+    with open(filename,'w',encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(handcoordlst)
+    return writer
