@@ -11,7 +11,7 @@ import numpy as np
 import sys
 import pandas as pd
 import csv
-
+import hppdWC
 
 
 def gethandlandmarks(frame,x_resolution,y_resolution):
@@ -53,6 +53,7 @@ def gethandlandmarks(frame,x_resolution,y_resolution):
                     y=results.multi_hand_landmarks[0].landmark[mphands.HandLandmark(landmark)].y
                     x=x_resolution*x #x resolution for the camera, need rescaling because mediapipe gives 0<x<1
                     y=y_resolution*y #y resolution for the camera, need rescaling because mediapipe gives 0<y<1
+                    
                     bufferx.append(x)
                     buffery.append(y)
                 handlm.append([bufferx,buffery])
@@ -133,14 +134,14 @@ def changehandlandmarkStructure(hand_lm):
     '''
     row=[]
     if not hand_lm==[]:
-         for i in range(6):
+         for i in range(6): #scan through every sublist of the the hand lm array
              finger_buffer=hand_lm[i]
              x_buffer=finger_buffer[0]
              y_buffer=finger_buffer[1]
              for j in range(len(x_buffer)):
                  row.append(x_buffer[j])
                  row.append(y_buffer[j])
-    else:
+    else: #exception if the hand_lm list is empty because no hand was detcted by mediapipe
         row.append(np.nan)
     return row
 
@@ -160,11 +161,11 @@ def savelandmarkstoCSVfile(filecompletepath, landmarklist):
     writer : writer object
         
     '''
-    filename=filecompletepath[-17:-4]+'_landmarks.csv'
+    filename=filecompletepath[-17:-4]+'_landmarks.csv' #because of the current syntax with which test files are named -17 may not be correct for different applications of the code. 
     for i in range(len(landmarklist)):
-        landmarklist[i].insert(0,i)
+        landmarklist[i].insert(0,i) #to add the frame number at the beginning of each landmark list
     header=["frame","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
-    with open(filename,'w',encoding='UTF8', newline='') as f:
+    with open(filename,'w',encoding='UTF8', newline='') as f: #initalize the csv file https://docs.python.org/3/library/csv.html
         writer = csv.writer(f)
         writer.writerow(header)
         writer.writerows(landmarklist)

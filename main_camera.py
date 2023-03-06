@@ -14,8 +14,8 @@ import transform
 
 start=time.time()
 
-fileCompleteName=r'D:\01_raw\T017S03BnrC3r.bag'
-NumberOfFrames=20000 #usually 20000 for a full acquisition
+fileCompleteName=r'D:\01_raw\T017S03BnrC3r.bag' #full path of the file expected
+NumberOfFrames=1000 #usually 20000 for a full acquisition
 x_resolution=640
 y_resolution=480
 rgblist=[]
@@ -23,6 +23,7 @@ lm_lst=[]
 x_hList=[]
 y_hList=[]
 hand_cyl_coord_lst=[]
+
 #start the pipeline and setup the configuration to read the .bag file
 pipeline = rs.pipeline()
 config = rs.config()
@@ -34,22 +35,22 @@ playback = device.as_playback()
 playback.set_real_time(False)
 
 colorizer = rs.colorizer()
-colorizer.set_option(rs.option.color_scheme, 1)  # jet
+colorizer.set_option(rs.option.color_scheme, 1)
 aligned_stream = rs.align(rs.stream.color) 
 
 for i in range(NumberOfFrames):
     try:
         frame = pipeline.wait_for_frames()
-    except:
+    except: #if no/no more frames are available stops to fetch them.
         print(i)
         break
-    frame = aligned_stream.process(frame)
+    frame = aligned_stream.process(frame) #align the color and depth frame
     
     # get the depth and color frames
     depth_frame = frame.get_depth_frame()
     color_frame = frame.get_color_frame()
-    color_image_rgb = np.asanyarray(color_frame.get_data())
-    depth_image = np.asanyarray(depth_frame.get_data())
+    color_image_rgb = np.asanyarray(color_frame.get_data())#transform the color frame in a RGB array
+    depth_image = np.asanyarray(depth_frame.get_data())#transform the depth frame in an array
     #get the camera intrinsic parameters
     if i == 0:
         # load intrinsic params of camera and find the wheel centre as well as the plane on which the wheel stands
@@ -67,9 +68,12 @@ for i in range(NumberOfFrames):
     lm_lst.append(hand_lm_buffer)
     #get the hand position
     xh,yh,zh=findregion.averagehandposition(hand_lm,depth_image)
+    #convert the x and y coordinate from pixel to metric
+    xh,yh,zh=hppdWC.geom.convert_depth_pixel_to_metric_coordinate_pp_ff(zh, xh, yh, ppx, ppy, fx, fy)
     hand_coordinates_camera=[xh,yh,zh]
+    
     #transform the hand coordinates to the wheel plane frame
-    if hand_coordinates_camera[0] != np.nan:
+    if hand_coordinates_camera[0] != np.nan: #check if the current list of coordinates has not a nan value
         # transform
         hand_coordinates_hrplane=transform.changeRefFrameTR(hand_coordinates_camera, centre_metric, rot)
         #transform the hand coordinates from cartesian to cylindrical
@@ -80,7 +84,10 @@ for i in range(NumberOfFrames):
         
 #saves the landmark list for each frame to a csv file in the current project directory
 findregion.savelandmarkstoCSVfile(fileCompleteName, lm_lst)
+#saves the hand coordinates list for each frame to a csv file in the current project directory
 findregion.savehandcoordinates(fileCompleteName, hand_cyl_coord_lst)
+
 end=time.time()  
-print(end-start)
+print(end-start) #print execution time in seconds
+
 pipeline.stop()
