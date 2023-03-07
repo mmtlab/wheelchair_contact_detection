@@ -6,16 +6,16 @@ Created on Wed Feb 22 14:24:09 2023
 """
 import numpy as np
 import pyrealsense2 as rs
-import findregion
+import coordinates
 import time
 import hppdWC
-import fromcartesiantocylndrical
-import transform
 
 start=time.time()
 
-filecompletename=r'D:\01_raw\T017S03BnrC3r.bag' #full path of the file expected
-number_of_frames=1000 #usually 20000 for a full acquisition
+#full path of the file expected
+filecompletename=r'D:\01_raw\T017S03BnrC3r.bag' 
+#usually 20000 frames for a full acquisition
+number_of_frames=1000 
 x_resolution=640
 y_resolution=480
 rgblist=[]
@@ -25,7 +25,7 @@ y_hList=[]
 hand_cyl_coord_lst=[]
 # TODO one line loops to write the header
 header_lm=["frame","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
-header_hand_position=["frame","RadDistance[m]","Angle[rad]","NormDistance[m]"]
+header_hand_position=["frame","RadDistance[m]","RadAngle[rad]","NormDistance[m]"]
 #start the pipeline and setup the configuration to read the .bag file
 pipeline = rs.pipeline()
 config = rs.config()
@@ -43,10 +43,12 @@ aligned_stream = rs.align(rs.stream.color)
 for i in range(number_of_frames):
     try:
         frame = pipeline.wait_for_frames()
-    except: #if no/no more frames are available stops to fetch them.
+    #if no/no more frames are available stops to fetch them.
+    except:
         print(i)
         break
-    frame = aligned_stream.process(frame) #align the color and depth frame
+    #align the color and depth frame
+    frame = aligned_stream.process(frame)
     
     # get the depth and color frames
     depth_frame = frame.get_depth_frame()
@@ -65,31 +67,33 @@ for i in range(number_of_frames):
         wc_img, hrc_img, centre_metric, handrimPlane, dataPlane = hppdWC.analysis.findWheelCentreAndHandrim(color_image_rgb,depth_image,ppx,ppy,fx,fy)
         rot, rmsd, sens=hppdWC.geom.rotMatrixToFitPlaneWRTimg(handrimPlane,centre_metric)
     #get the hand landmarks and stores them in lm_lst for each frame with a different configuration for better csv writing
-    hand_lm=findregion.get_hand_landmarks(color_image_rgb,x_resolution,y_resolution)
-    hand_lm_buffer=findregion.multi_array_to_mono_array(hand_lm)
+    hand_lm=coordinates.get_hand_landmarks(color_image_rgb,x_resolution,y_resolution)
+    hand_lm_buffer=coordinates.multi_array_to_mono_array(hand_lm)
     lm_lst.append(hand_lm_buffer)
     #get the hand position
-    xh,yh,zh=findregion.roi_position(hand_lm,depth_image)
+    xh,yh,zh=coordinates.roi_position(hand_lm,depth_image)
     #convert the x and y coordinate from pixel to metric
     xh,yh,zh=hppdWC.geom.convert_depth_pixel_to_metric_coordinate_pp_ff(zh, xh, yh, ppx, ppy, fx, fy)
     hand_coordinates_camera=[xh,yh,zh]
     
     #transform the hand coordinates to the wheel plane frame
-    if hand_coordinates_camera[0] != np.nan: #check if the current list of coordinates has not a nan value
+    #check if the current list of coordinates has not nan values
+    if hand_coordinates_camera[0] != np.nan: 
         # transform
-        hand_coordinates_hrplane=transform.changeRefFrameTR(hand_coordinates_camera, centre_metric, rot)
+        hand_coordinates_hrplane=coordinates.changeRefFrameTR(hand_coordinates_camera, centre_metric, rot)
         #transform the hand coordinates from cartesian to cylindrical
-        hand_cyl_coordinates=fromcartesiantocylndrical.from_cart_to_cylindrical_coordinates(hand_coordinates_hrplane)
+        hand_cyl_coordinates=coordinates.from_cart_to_cylindrical_coordinates(hand_coordinates_hrplane)
         hand_cyl_coord_lst.append(hand_cyl_coordinates)
     else:
         hand_cyl_coord_lst.append(np.nan)
         # TODO check if nan is fine or requires list of three elements
 #saves the landmark list for each frame to a csv file in the current project directory
-findregion.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm)
+coordinates.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm, 'landmark')
 #saves the hand coordinates list for each frame to a csv file in the current project directory
-findregion.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position)
+coordinates.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position, 'handposition')
 
 end=time.time()  
-print(end-start) #print execution time in seconds
+#print execution time in seconds
+print(end-start)
 
 pipeline.stop()

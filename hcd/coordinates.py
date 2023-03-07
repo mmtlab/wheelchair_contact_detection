@@ -6,13 +6,11 @@ Created on Thu Feb 23 12:45:38 2023
 """
 
 import mediapipe as mp 
-import cv2
 import numpy as np
-import sys
-import pandas as pd
 import csv
-import hppdWC
 import os
+import math
+
 
 def get_hand_landmarks(frame,x_resolution,y_resolution):
     '''
@@ -166,7 +164,6 @@ def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname):
     writer : writer object
         
     '''
-    # TODO explore os library to write filename
     filename=os.path.splitext(os.path.split(filecompletename)[1])[0] + '_' + dataname + '.csv'
     for i in range(len(multilist)):
        multilist[i].insert(0,i) #to add the sub-list index at the beginning of each list
@@ -176,4 +173,61 @@ def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname):
         writer.writerow(header)
         writer.writerows(multilist)
     return writer
+
+def from_cart_to_cylindrical_coordinates(cart_coord):
+    '''
+    Transform x,y,z coordinates of a point to dist_rad,theta,z (cylindrical) coordinates.
+
+    Parameters
+    ----------
+    cart_coord : array n*3
+        XYZ coordinates of the point.
+
+    Returns
+    -------
+    cyl_coord : array n*3
+        Cylindrical coordinates of the point.
+        Following structure [dist_rad,ang_rad,dist_norm].
+
+    '''
+    dist_rad=math.sqrt((cart_coord[0])**2 + (cart_coord[1])**2)
+    #since the arctan function in math outputs only an angle between -pi/2 and pi/2 based on x and y position
+    #we can adjust the output to express the angle through the 4 quadrants.
+    if cart_coord[0]>=0 and cart_coord[1]>=0: #first quadrant
+        ang_rad=math.atan(cart_coord[1]/cart_coord[0])
+    elif cart_coord[0]<0: #second and third quadrant
+        ang_rad=math.atan(cart_coord[1]/cart_coord[0])+math.pi
+    else: #fourth quadrant
+        ang_rad=math.atan(cart_coord[1]/cart_coord[0])+2*math.pi
+    cyl_coord=[dist_rad,ang_rad,cart_coord[2]]
+    return cyl_coord
+
+def changeRefFrameTR(data, XYZcentre, r):
+    '''
+    Applies a rototranslation matrix to the given data.
+    First a translation and then a rotation, both expressed in the original ref frame
+
+    Parameters
+    ----------
+    data : array n*2 or n*3
+        XY(Z) coordinates to be rototranslated.
+    XYZcentre : array 1*2 or 1*3
+        Coordinates of the centre of the new reference frame seen from the original one.
+    r : <scipy.spatial.transform._rotation.Rotation>
+        Rotation applied to the data.
+
+    Returns
+    -------
+    data_new_ref : array n*2 or n*3
+        Expressed in the new reference frame.
+
+    '''
+    # translation
+    data_translated = []
+    for i in range(len(data)):
+        data_translated.append(data[i] - XYZcentre[i])
+    # rotation
+    data_new_ref = r.apply(data_translated)
+
+    return data_new_ref
 
