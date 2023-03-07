@@ -12,9 +12,9 @@ import sys
 import pandas as pd
 import csv
 import hppdWC
+import os
 
-
-def gethandlandmarks(frame,x_resolution,y_resolution):
+def get_hand_landmarks(frame,x_resolution,y_resolution):
     '''
     Given an rgb frame along with the pixel resolution of the image can extract
     the x and y position of each landmark of the hand which are enumerated as you can see at
@@ -60,7 +60,7 @@ def gethandlandmarks(frame,x_resolution,y_resolution):
         
     return handlm
 
-def averagehandposition(handlm,depthframe):
+def roi_position(handlm,depthframe):
     '''
     Given a set of landmark detect the max and min value in both x and y.
     Finds the center of the region delimited by those value and given a depth map of the pixels
@@ -116,7 +116,7 @@ def averagehandposition(handlm,depthframe):
        zh=np.nan    
     return xh,yh,zh 
 
-def changehandlandmarkStructure(hand_lm):
+def multi_array_to_mono_array(hand_lm):
     '''
     Changes the structure of the array to a monodimensional list with the following structure:
     [x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
@@ -145,52 +145,35 @@ def changehandlandmarkStructure(hand_lm):
         row.append(np.nan)
     return row
 
-def savelandmarkstoCSVfile(filecompletepath, landmarklist):
+def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname):
     '''
-    Given a landmark list containing their coordinates, creates a csv file containing the data for each frame.
+    Given a list, creates a csv file where each row correspond to a sublist in the input list.
 
     Parameters
     ----------
-    filename : string
+    filecompletename : string
         The path of the test we are currently examining.
-    landmarklist : list
-        Contains the x and y of each landmark of the hand with the structure [x0,y0,x1,y1,etc..]
-
+    multilist : list
+        contains the data with the structure [[data1.1,data1.2,etc..],[data2.1,data2.2, etc..],etc..]
+    header : list
+        contains the head to each column of the CSV file.
+    dataname : string
+        contains the name of the data we are writing in the CSV.
+        i.e. if the data are coordinates: dataname='coordinates'. 
+        The CSV file will be named as follow 'testname' + '_dataname' + .csv
     Returns
     -------
     writer : writer object
         
     '''
-    filename=filecompletepath[-17:-4]+'_landmarks.csv' #because of the current syntax with which test files are named -17 may not be correct for different applications of the code. 
-    for i in range(len(landmarklist)):
-        landmarklist[i].insert(0,i) #to add the frame number at the beginning of each landmark list
-    header=["frame","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
+    # TODO explore os library to write filename
+    filename=os.path.splitext(os.path.split(filecompletename)[1])[0] + '_' + dataname + '.csv'
+    for i in range(len(multilist)):
+       multilist[i].insert(0,i) #to add the sub-list index at the beginning of each list
+    
     with open(filename,'w',encoding='UTF8', newline='') as f: #initalize the csv file https://docs.python.org/3/library/csv.html
         writer = csv.writer(f)
         writer.writerow(header)
-        writer.writerows(landmarklist)
+        writer.writerows(multilist)
     return writer
 
-def savehandcoordinates(filecompletepath,handcoordlst):
-    '''
-    Given the hand coordinates list, creates a csv file in which each rows represent the coordinates for each frame.
-
-    Parameters
-    ----------
-    handcoordlst : list
-        Contains the cylindrical coordinates of the hand position.
-
-    Returns
-    -------
-    writer : writer object
-    
-    '''
-    filename=filecompletepath[-17:-4]+'_handposition.csv'
-    for i in range(len(handcoordlst)):
-        handcoordlst[i].insert(0,i)
-    header=["frame","RadDistance[m]","Angle[rad]","NormDistance[m]"]
-    with open(filename,'w',encoding='UTF8', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerows(handcoordlst)
-    return writer

@@ -6,7 +6,7 @@ Created on Thu Mar  2 15:43:16 2023
 """
 
 import math
-def fromCartToCylindricalCoordinates(cart_coord):
+def from_cart_to_cylindrical_coordinates(cart_coord):
     '''
     Transform x,y,z coordinates of a point to r,theta,z (cylindrical) coordinates.
 
