@@ -15,5 +15,6 @@ filename = r'D:\01_raw\T002.bag'
 b = bagreader(filename)
 
 df=b.topic_table
-rgb_MSG=b.message_by_topic('/device_0/sensor_1/Color_0/image/data')
-df_rgb=pd.read_csv(rgb_MSG)
+rgb_MSG=b.message_by_topic('/device_0/sensor_1/option/Global_Time_Enabled/value')
+print(rgb_MSG)
+# df_rgb=pd.read_csv(rgb_MSG)
