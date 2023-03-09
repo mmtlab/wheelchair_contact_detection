@@ -15,7 +15,7 @@ start=time.time()
 #full path of the file expected
 filecompletename=r'D:\01_raw\T017S03BnrC3r.bag' 
 #usually 20000 frames for a full acquisition
-number_of_frames=20000
+number_of_frames=200
 x_resolution=640
 y_resolution=480
 rgblist=[]
@@ -27,8 +27,10 @@ centre_metric_avg=np.array([0,0,0])
 handrimPlane_avg=np.array([0,0,0,0])
 hand_coordinates_camera_lst=[]
 # TODO one line loops to write the header
+dir_analysis=r'G:\Drive condivisi\Wheelchair Ergometer\handrim contact detection\Tests\20230309\03_analysis'
 header_lm=["frame","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
 header_hand_position=["frame","RadDistance[m]","RadAngle[rad]","NormDistance[m]"]
+
 #start the pipeline and setup the configuration to read the .bag file
 pipeline = rs.pipeline()
 config = rs.config()
@@ -100,9 +102,9 @@ for j in range(len(hand_coordinates_camera_lst)):
         hand_cyl_coord_lst.append(np.nan)
         # TODO check if nan is fine or requires list of three elements
 #saves the landmark list for each frame to a csv file in the current project directory
-coordinates.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm, 'landmark')
+coordinates.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm, 'landmark',dir_analysis)
 #saves the hand coordinates list for each frame to a csv file in the current project directory
-coordinates.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position, 'handposition')
+coordinates.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position, 'handposition',dir_analysis)
 
 end=time.time()  
 #print execution time in seconds

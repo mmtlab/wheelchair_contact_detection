@@ -143,7 +143,7 @@ def multi_array_to_mono_array(hand_lm):
         row.append(np.nan)
     return row
 
-def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname):
+def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname, dirpath):
     '''
     Given a list, creates a csv file where each row correspond to a sublist in the input list.
 
@@ -165,6 +165,7 @@ def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname):
         
     '''
     filename=os.path.splitext(os.path.split(filecompletename)[1])[0] + '_' + dataname + '.csv'
+    filename=os.path.join(dirpath,filename)
     for i in range(len(multilist)):
        multilist[i].insert(0,i) #to add the sub-list index at the beginning of each list
     
