@@ -159,6 +159,8 @@ def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname, dir
         contains the name of the data we are writing in the CSV.
         i.e. if the data are coordinates: dataname='coordinates'. 
         The CSV file will be named as follow 'testname' + '_dataname' + .csv
+    dirpath : string
+        contains the directory path into which the CSV file will be created.
     Returns
     -------
     writer : writer object
