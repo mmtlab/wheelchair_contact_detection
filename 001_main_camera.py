@@ -18,6 +18,7 @@ filecompletename=r'D:\01_raw\T017S03BnrC3r.bag'
 number_of_frames=200
 x_resolution=640
 y_resolution=480
+timestamp=[]
 rgblist=[]
 lm_lst=[]
 x_hList=[]
@@ -26,10 +27,11 @@ hand_cyl_coord_lst=[]
 centre_metric_avg=np.array([0,0,0])
 handrimPlane_avg=np.array([0,0,0,0])
 hand_coordinates_camera_lst=[]
+dir_lm=r'G:\Drive condivisi\Wheelchair Ergometer\handrim contact detection\Tests\20230309\02_preprocessing\realsenseRight\landmark'
+dir_handposition=r'G:\Drive condivisi\Wheelchair Ergometer\handrim contact detection\Tests\20230309\02_preprocessing\realsenseRight\handposition'
 # TODO one line loops to write the header
-dir_analysis=r'G:\Drive condivisi\Wheelchair Ergometer\handrim contact detection\Tests\20230309\03_analysis'
-header_lm=["frame","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
-header_hand_position=["frame","RadDistance[m]","RadAngle[rad]","NormDistance[m]"]
+header_lm=["time","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
+header_hand_position=["time","RadDistance[m]","RadAngle[rad]","NormDistance[m]"]
 
 #start the pipeline and setup the configuration to read the .bag file
 pipeline = rs.pipeline()
@@ -54,7 +56,9 @@ for i in range(number_of_frames):
         break
     #align the color and depth frame
     frame = aligned_stream.process(frame)
-    
+    #get the timestamp of each single frame
+    timestamp_s = frame.get_timestamp()/1000
+    timestamp.append(timestamp_s)
     # get the depth and color frames
     depth_frame = frame.get_depth_frame()
     color_frame = frame.get_color_frame()
@@ -80,6 +84,7 @@ for i in range(number_of_frames):
     #get the hand landmarks and stores them in lm_lst for each frame with a different configuration for better csv writing
     hand_lm=coordinates.get_hand_landmarks(color_image_rgb,x_resolution,y_resolution)
     hand_lm_buffer=coordinates.multi_array_to_mono_array(hand_lm)
+    hand_lm_buffer.insert(0,timestamp_s)
     lm_lst.append(hand_lm_buffer)
     #get the hand position
     xh,yh,zh=coordinates.roi_position(hand_lm,depth_image)
@@ -97,14 +102,16 @@ for j in range(len(hand_coordinates_camera_lst)):
         hand_coordinates_hrplane=coordinates.changeRefFrameTR(hand_coordinates_camera_lst[j], centre_metric_avg, rot)
         #transform the hand coordinates from cartesian to cylindrical
         hand_cyl_coordinates=coordinates.from_cart_to_cylindrical_coordinates(hand_coordinates_hrplane)
+        hand_cyl_coordinates.insert(0,timestamp[j])
         hand_cyl_coord_lst.append(hand_cyl_coordinates)
     else:
+        hand_cyl_coord_lst[j].insert(0,timestamp[j])
         hand_cyl_coord_lst.append(np.nan)
         # TODO check if nan is fine or requires list of three elements
 #saves the landmark list for each frame to a csv file in the current project directory
-coordinates.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm, 'landmark',dir_analysis)
+coordinates.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm, 'landmark',dir_lm)
 #saves the hand coordinates list for each frame to a csv file in the current project directory
-coordinates.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position, 'handposition',dir_analysis)
+coordinates.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position, 'handposition',dir_handposition)
 
 end=time.time()  
 #print execution time in seconds

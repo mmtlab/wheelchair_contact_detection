@@ -168,13 +168,12 @@ def save_multilist_to_CSVfile(filecompletename, multilist, header, dataname, dir
     '''
     filename=os.path.splitext(os.path.split(filecompletename)[1])[0] + '_' + dataname + '.csv'
     filename=os.path.join(dirpath,filename)
-    for i in range(len(multilist)):
-       multilist[i].insert(0,i) #to add the sub-list index at the beginning of each list
     
     with open(filename,'w',encoding='UTF8', newline='') as f: #initalize the csv file https://docs.python.org/3/library/csv.html
         writer = csv.writer(f)
         writer.writerow(header)
-        writer.writerows(multilist)
+        for i in range(len(multilist)):
+            writer.writerow(multilist[i])
     return writer
 
 def from_cart_to_cylindrical_coordinates(cart_coord):
