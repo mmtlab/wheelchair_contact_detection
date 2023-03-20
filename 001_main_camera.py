@@ -9,8 +9,9 @@ import pyrealsense2 as rs
 from hcd import coordinates
 import time
 import hppdWC
+import basic
 
-start=time.time()
+timer=basic.timer.Timer(name="001_main_camera")
 
 #full path of the file expected
 filecompletename=r'D:\01_raw\T017S03BnrC3r.bag' 
@@ -47,6 +48,7 @@ colorizer = rs.colorizer()
 colorizer.set_option(rs.option.color_scheme, 1)
 aligned_stream = rs.align(rs.stream.color) 
 
+timer.lap(lap_name="configuration of bag file")
 for i in range(number_of_frames):
     try:
         frame = pipeline.wait_for_frames()
@@ -81,6 +83,7 @@ for i in range(number_of_frames):
         if i==99:
             handrimPlane_avg=hppdWC.geom.Plane3d(a=handrimPlane_avg[0],b=handrimPlane_avg[1],c=handrimPlane_avg[2],d=handrimPlane_avg[3])
             rot, rmsd, sens=hppdWC.geom.rotMatrixToFitPlaneWRTimg(handrimPlane_avg,centre_metric_avg)
+            timer.elap("time to find the handrim plane and centre")
     #get the hand landmarks and stores them in lm_lst for each frame with a different configuration for better csv writing
     hand_lm=coordinates.get_hand_landmarks(color_image_rgb,x_resolution,y_resolution)
     hand_lm_buffer=coordinates.multi_array_to_mono_array(hand_lm)
@@ -93,7 +96,7 @@ for i in range(number_of_frames):
     hand_coordinates_camera=[xh,yh,zh]
     hand_coordinates_camera_lst.append(hand_coordinates_camera)
     
-
+timer.lap("time to find the hand landmark and roi position")
 #transform the hand coordinates to the wheel plane frame
 for j in range(len(hand_coordinates_camera_lst)):
     #check if the current list of coordinates has not nan values
@@ -109,12 +112,9 @@ for j in range(len(hand_coordinates_camera_lst)):
         hand_cyl_coord_lst.append(np.nan)
         # TODO check if nan is fine or requires list of three elements
 #saves the landmark list for each frame to a csv file in the current project directory
+timer.lap("time to transform the coordinates to the wheel plane frame")
 coordinates.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm, 'landmark',dir_lm)
 #saves the hand coordinates list for each frame to a csv file in the current project directory
 coordinates.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position, 'handposition',dir_handposition)
-
-end=time.time()  
-#print execution time in seconds
-print(end-start)
 
 pipeline.stop()
