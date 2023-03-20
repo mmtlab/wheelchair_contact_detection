@@ -15,7 +15,7 @@ start=time.time()
 #full path of the file expected
 filecompletename=r'D:\01_raw\T017S03BnrC3r.bag' 
 #usually 20000 frames for a full acquisition
-number_of_frames=200
+number_of_frames=20000
 x_resolution=640
 y_resolution=480
 timestamp=[]
