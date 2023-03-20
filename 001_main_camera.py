@@ -19,6 +19,8 @@ filecompletename=r'D:\01_raw\T017S03BnrC3r.bag'
 number_of_frames=20000
 x_resolution=640
 y_resolution=480
+threshold=100
+led_status_lst=[]
 timestamp=[]
 rgblist=[]
 lm_lst=[]
@@ -66,6 +68,7 @@ for i in range(number_of_frames):
     color_frame = frame.get_color_frame()
     color_image_rgb = np.asanyarray(color_frame.get_data())#transform the color frame in a RGB array
     depth_image = np.asanyarray(depth_frame.get_data())#transform the depth frame in an array
+    
     #get the camera intrinsic parameters
     if i <100:
         # load intrinsic params of camera and find the wheel centre as well as the plane on which the wheel stands
