@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Feb 22 14:24:09 2023
+Created on Mon Apr  3 14:43:49 2023
 
 @author: giamp
 """
+
 import numpy as np
 import pyrealsense2 as rs
 from hcd import coordinates
 from hcd import mphands
+from hcd import utils
 import hppdWC
 import basic
+import cv2
 
 timer=basic.timer.Timer(name="001_main_camera")
 
@@ -20,8 +23,9 @@ number_of_frames=20000
 x_resolution=848
 y_resolution=480
 threshold=100
-distance=1200
 SHOWVIDEO=True
+fps=60
+distance=1200
 led_status_lst=[]
 timestamp=[]
 rgblist=[]
@@ -39,6 +43,7 @@ dir_handposition=r'G:\Drive condivisi\Wheelchair Ergometer\handrim contact detec
 header_lm=["time","x0","y0","x1","y1","x2","y2","x3","y3","x4","y4","x5","y5","x6","y6","x7","y7","x8","y8","x9","y9","x10","y10","x11","y11","x12","y12","x13","y13","x14","y14","x15","y15","x16","y16","x17","y17","x18","y18","x19","y19","x20","y20"]
 header_hand_position=["time","RadDistance[m]","RadAngle[rad]","NormDistance[m]"]
 
+video=cv2.VideoWriter(video_full_path, cv2.VideoWriter_fourcc('M','J','P','G'), 60, (x_resolution, y_resolution))
 #start the pipeline and setup the configuration to read the .bag file
 pipeline = rs.pipeline()
 config = rs.config()
@@ -92,34 +97,24 @@ for i in range(number_of_frames):
     #turn every pixel further than 1200 to black
     color_image_rgb[depth_image > distance] = [0,0,0]
     #get the hand landmarks and stores them in lm_lst for each frame with a different configuration for better csv writing
-    hand_lm=coordinates.get_hand_landmarks(color_image_rgb,x_resolution,y_resolution)
+    hand_lm=coordinates.get_hand_landmarks(color_image_rgb,x_resolution,y_resolution)       
     hand_lm_buffer=coordinates.multi_array_to_mono_array(hand_lm)
     hand_lm_buffer.insert(0,timestamp_s)
     lm_lst.append(hand_lm_buffer)
     #get the hand position
     xh,yh,zh=coordinates.roi_position(hand_lm,depth_image)
+    
+    img=color_image_rgb
+    centre=(xh,yh)
+    if xh is np.nan:
+        centre=(0,0)           
+    cv2.circle(img,centre, 20, (0,0,255), -1)
+    cv2.putText(img=img, text=str(i/60)+ "frame: "+ str(i), org=(50,40), fontFace=cv2.FONT_HERSHEY_PLAIN , fontScale=3, color=(255, 255, 255),thickness=3)
+    video.write(img)
+        
     #convert the x and y coordinate from pixel to metric
     xh,yh,zh=hppdWC.geom.convert_depth_pixel_to_metric_coordinate_pp_ff(zh, xh, yh, ppx, ppy, fx, fy)
     hand_coordinates_camera=[xh,yh,zh]
     hand_coordinates_camera_lst.append(hand_coordinates_camera)
-timer.lap("time to find the hand landmark and roi position")
-#transform the hand coordinates to the wheel plane frame
-for j in range(len(hand_coordinates_camera_lst)):
-    #check if the current list of coordinates has not nan values
-    if hand_coordinates_camera_lst[j][0] != np.nan: 
-        # transform
-        hand_coordinates_hrplane=coordinates.changeRefFrameTR(hand_coordinates_camera_lst[j], centre_metric_avg, rot)
-        #transform the hand coordinates from cartesian to cylindrical
-        hand_cyl_coordinates=coordinates.from_cart_to_cylindrical_coordinates(hand_coordinates_hrplane)
-        hand_cyl_coordinates.insert(0,timestamp[j])
-        hand_cyl_coord_lst.append(hand_cyl_coordinates)
-    else:
-        hand_cyl_coord_lst[j].insert(0,timestamp[j])
-        hand_cyl_coord_lst.append(np.nan)
-        # TODO check if nan is fine or requires list of three elements
-#saves the landmark list for each frame to a csv file in the current project directory
-timer.lap("time to transform the coordinates to the wheel plane frame")
-coordinates.save_multilist_to_CSVfile(filecompletename, lm_lst, header_lm, 'landmark',dir_lm)
-#saves the hand coordinates list for each frame to a csv file in the current project directory
-coordinates.save_multilist_to_CSVfile(filecompletename, hand_cyl_coord_lst, header_hand_position, 'handposition',dir_handposition)
-pipeline.stop()
+    print(i)
+video.release()

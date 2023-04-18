@@ -38,7 +38,7 @@ def get_hand_landmarks(frame,x_resolution,y_resolution):
     landmarkls=[[0],[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]]
     handlm=[]
     mphands=mp.solutions.hands
-    with mphands.Hands(static_image_mode=True, min_detection_confidence=0.8, min_tracking_confidence=0.5, model_complexity=1) as hands:
+    with mphands.Hands(static_image_mode=False, min_detection_confidence=0.1, min_tracking_confidence=0.5, model_complexity=1) as hands:
         results=hands.process(frame)
         if not results.multi_hand_landmarks:
             pass

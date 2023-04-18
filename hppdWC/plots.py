@@ -352,7 +352,7 @@ def drawInSubPlots(listXarrays, listYarrays, sharex = False, sharey = False, nro
 
         listYarrays[counter] = np.squeeze(listYarrays[counter]).tolist()
         listXarrays[counter] = np.squeeze(listXarrays[counter]).tolist()
-
+        
         # if more than one y array to plot for this axis
         if not np.isscalar(listYarrays[counter][0]):
             # if no x array is given -> ok: repeated for all the y

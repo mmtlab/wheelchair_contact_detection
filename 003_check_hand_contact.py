@@ -18,7 +18,7 @@ header_led=["time","led status"]
 dir_led=r'D:\01_raw'
 tl=[0,0]
 rb=[100,100]
-def led_status (img, tl, br):
+def led_status (img, tl, br, threshold):
     img=basic.imagelib.cropImageTLBR(img, tl, br)    
 
     # Calculate average value of each channel
@@ -27,7 +27,7 @@ def led_status (img, tl, br):
     blue_avg = np.mean(img[:,:,2])
     
     # Check if the led is on
-    if red_avg or green_avg or blue_avg > threshold:
+    if red_avg > threshold:
         led_status=True
     else:
         led_status=False
@@ -65,12 +65,4 @@ for i in range(number_of_frames):
     color_image_rgb = np.asanyarray(color_frame.get_data())#transform the color frame in a RGB array
     led_status_lst.append([timestamp_s,led_status(color_image_rgb,tl,rb)])
 
-
 coordinates.save_multilist_to_CSVfile(filecompletename, led_status_lst, header_led, 'led_status', dir_led)
-    
-    
-
-    
-    
-    
-

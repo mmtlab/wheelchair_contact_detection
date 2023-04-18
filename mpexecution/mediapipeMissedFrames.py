@@ -12,7 +12,7 @@ import numpy as np
 import mediapipe as mp
 import basic
 
-filecompletename= [r'D:\20230308_114218.bag',r'D:\20230308_114222.bag']
+filecompletename= r'D:\VID_20230316_123537_02.mp4'
 number_of_frames=20000
 mphands=mp.solutions.hands
 missedframes=np.array([0,0])
@@ -49,7 +49,7 @@ for j in [0,1]:
         #     color_image_rgb = basic.imagelib.cropImageTLBR(color_image_rgb, [30,154], [136,309])
         # if j == 1:
         #     color_image_rgb = basic.imagelib.cropImageTLBR(color_image_rgb, [70,80], [182,226])
-        with mphands.Hands(static_image_mode=True, min_detection_confidence=0.8, min_tracking_confidence=1.0, model_complexity=1) as hands:
+        with mphands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.8, min_tracking_confidence=0.5, model_complexity=1) as hands:
             results=hands.process(color_image_rgb)
             if not results.multi_hand_landmarks:
                 missedframes[j]=missedframes[j]+1
