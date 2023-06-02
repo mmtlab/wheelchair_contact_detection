@@ -7,6 +7,8 @@ Created on Tue Mar 21 11:14:59 2023
 import scipy
 import logging
 import numpy as np
+import hcd
+import matplotlib.pyplot as plt
 from hppdWC import utils
 from hppdWC import plots
 
@@ -183,7 +185,14 @@ def syncXcorr(signal1, signal2, time1, time2, step = 0.01, \
     # eventually cutting the signal2
     if interval2 != [0, 0]:
         x2, y2 = cutInTime(x2, y2, interval2)
-   
+    # eventually remove last element from signal with more value
+    if len(x2)!=len(x1):
+        if len(x2)>len(x1):
+            x2=x2[0:-1]
+            y2=y2[0:-1]
+        else:
+            x1=x1[0:-1]
+            y1=y1[0:-1]
     # putting the values around 0
     y1 = y1 - np.mean(y1)
     y2 = y2 - np.mean(y2)
@@ -225,6 +234,7 @@ def plot_syncXcorr(results, device1, device2, userTitle = '', col1 = 'C0', col2 
         [[(x1 + interval1[0]).tolist(),(x2 + interval2[0]).tolist()],\
         (lags*step + userDelay).tolist(), \
         [(x1 + interval1[0]).tolist(),(x2 + interval2[0] +delay).tolist()]],\
+        
     listYarrays = \
         [[y1.tolist(), y2.tolist()], \
         corr,\
@@ -292,8 +302,10 @@ def fillNanWithInterp(y, x = 0, mode = 'linear'):
     # if the first or the last value of y are nan, copy the closest value
     if notNanIndexes[0] == False:
         y[0] = y[notNanIndexes][0]
+        # y[0] = y[notNanIndexes[0]]
     if notNanIndexes[-1] == False:
         y[-1] = y[notNanIndexes][-1] 
+        # y[-1] = y[notNanIndexes[-1]] 
     
     # find again the indexes where y is not nan
     # now the first and the last value are not nan, and they're the extremes of 
@@ -415,3 +427,34 @@ def resampleWithInterp(y, x = 0, xparam = 0.01, param = 'time step', mode = 'lin
     
     return yinterp, xinterp, finterp
 
+def syncCameraCapsleeve(led_data,cap_data):
+    capbump = hcd.capsleeve.find_first_bump(cap_data)
+    threshold = led_data['Red'].iloc[0:60].mean()
+    dev = led_data['Red'].iloc[0:60].std()
+    for i in range(len(led_data['Time(s)'])):
+        if i>59 and led_data.at[i,"Red"]>threshold+4*dev:
+            leddelay=led_data.at[i,"Time(s)"]
+            break
+    csini= capbump - leddelay
+    return csini
+def plotSyncedCameraCapsleeve(cap_data,led_data,csini):
+    acceldata=cap_data["Accelerometer Y (g)"].to_numpy()
+    time=cap_data["Time (s)"].to_numpy()
+    reddata=led_data['Red'].to_numpy()
+    timeled=led_data['Time(s)'].to_numpy()
+    acceldata = acceldata - np.mean(acceldata)
+    reddata = reddata - np.mean(reddata)
+     
+    # normalizing from -1 to 1
+    acceldata = acceldata / np.max(np.abs(acceldata))
+    reddata = reddata / np.max(np.abs(reddata))
+    if csini>0:
+        acceldata=acceldata[time>csini]
+        time=time[0:-(len(time)-len(acceldata))]
+    if csini<0:
+        reddata=reddata[timeled>csini]
+    
+    plt.figure()
+    fig=plt.plot(time,acceldata)
+    plt.plot(timeled,reddata)
+    return fig

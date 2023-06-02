@@ -307,7 +307,7 @@ def getImagesDictBasicTransform(img, imgFormat = 'BGR', showImage = False):
     # conversion
     img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-    img_hls = cv2.cvtColor(img, cv2.COLOR_RGB2HSL)
+    img_hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
     img_lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
 
     # create images dictionary
