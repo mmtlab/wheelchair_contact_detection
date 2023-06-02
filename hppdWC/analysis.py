@@ -1912,10 +1912,10 @@ def pickDFProperty(df, column, nofelements = 1, ascending = False):
 
     return df_filtered, indexes
 
-def findWheelCentreAndHandrim(rgb_img, dep_img, ppx, ppy, fx, fy,
+def findWheelCentreAndHandrim(rgb_img, dep_img, ppx, ppy, fx, fy,dep_threshold_plane_detection=1300,
                               fitPlaneMethod = 'RANSAC',
                               minDist = 1, param1 = 50, param2 =60,
-                              minRadius = 180, maxRadius = 200,
+                              minRadius = 120, maxRadius = 140,
                               div = 4, edge_low_thresh = 50, edge_high_thresh = 150,
                               rho = 1, theta = np.pi/180, threshold = 30,
                               min_line_length_coeff = 0 , max_line_gap = 20,
@@ -2097,8 +2097,8 @@ def findWheelCentreAndHandrim(rgb_img, dep_img, ppx, ppy, fx, fy,
         lines_df_neg_slope = lines_df_000_slope.copy()
     else:
         # erase lines that are horizontal or vertical, they're on the edge between m>0 and m<0
-        lines_df = lines_df[lines_df['slope'] != 0]
-        lines_df = lines_df[lines_df['slope'] != np.inf]
+        # lines_df = lines_df[lines_df['slope'] != 0]
+        # lines_df = lines_df[lines_df['slope'] != np.inf]
         # SPLIT THE DF into lines with pos and neg slope
         lines_df_pos_slope, lines_df_neg_slope = splitDFProperty(lines_df, 'slope', 0.000001)
 
@@ -2223,6 +2223,7 @@ def findWheelCentreAndHandrim(rgb_img, dep_img, ppx, ppy, fx, fy,
     dep_image = dep_img.copy()
     # remove invalid values
     dep_image[dep_image <= 0] = np.nan
+    dep_image[dep_image>dep_threshold_plane_detection] = np.nan
     # creating a mask of the area of interest (circular crown)
     maskValidValues = abs(((xmask-xhrc_img)**2+(ymask-yhrc_img)**2-(rhrc_img)**2))<tolerance
     # give nan values to all the pixel outside of the area of interest
@@ -2337,6 +2338,305 @@ def findWheelCentreAndHandrim(rgb_img, dep_img, ppx, ppy, fx, fy,
 
     return wc_img, hrc_img, centre_metric, handrimPlane, dataPlane
 
+def findHandrim(rgb_img, dep_img, ppx, ppy, fx, fy,xwc_img,ywc_img,dep_threshold_plane_detection=1300,
+                              fitPlaneMethod = 'RANSAC',
+                              minDist = 1, param1 = 50, param2 =60,
+                              minRadius = 120, maxRadius = 140,
+                              div = 4, edge_low_thresh = 50, edge_high_thresh = 150,
+                              rho = 1, theta = np.pi/180, threshold = 30,
+                              min_line_length_coeff = 0 , max_line_gap = 20,
+                              w = 5, tolerance = 5000,
+                              maxMinDepthHandrimPlaneDetection = np.nan,
+                              showPlot = False, mainTitle = ''):
+    '''
+    Given an rgb image and corrispondent depth image with instrinsic camera coordinates, 
+    performs circles and lines detection to find the handrim and the centre of the wheel. 
+    Returns the centre of the wheel coordinates both in image and metric coordinates, 
+    thecentre of the handrim coordinates both in image (+ the radius of the handrim in the image) and metric coordinates, 
+    the plane where the handrim lays and the coordinates of the points of the handrim
+    
+    NB: slows down the execution
+
+    Parameters
+    ----------
+    rgb_img : matrix M*N*3
+        contains RGB or BGR information for every pixel.
+    dep_img : matrix M*N*1
+        contains DEP information for every pixel.
+    ppx : float
+        x centre of the metric camera on image
+    ppy : float
+        y centre of the metric camera on image
+    fx : float
+        focal distance on x
+    fy : float
+        focal distance on y
+    minDist : int
+        between centers. The default is 1.
+    param1 : int
+        refer to documentation. The default is 50.
+    param2 : int
+        refer to documentation. The default is 60.
+    minRadius : int
+        minimum radius of the detected circles. The default is 180.
+    maxRadius : int
+        maximum radius of the detected circles. The default is 200.
+    div : float, optional
+        once found the possible handrims, the image considered for centre 
+        detection is cropped in a square from the centre till radius / div. 
+        The default is 4.
+    edge_low_thresh : int
+        for canny edge detection.
+        The default is 50.
+    edge_high_thresh : int
+        for canny edge detection.
+        The default is 150.
+    rho : double
+        distance resolution in pixels of the Hough grid.
+        The default is 1.
+    theta : double
+       angular resolution in radians of the Hough grid.
+       The default is np.pi/180.
+    threshold : int
+        minimum number of votes (intersections in Hough grid cell).
+        The default is 30.
+    min_line_length : double
+        minimum number of pixels making up a line.
+        The default is 0.
+    max_line_gap : double
+        maximum gap in pixels between connectable line segments.
+        The default is 20.
+    w : int, optional
+        amplitude of the padding when computing mean and std of the colors 
+        crossed by the line. 
+        The default is 5.
+    tolerance : double, optional
+        amplitude of the circular crown. The default is 5000.
+    maxDepthHandrimPlaneDetection : double, optional
+        during LSTSQ computation to detect the handrim, values more far away 
+        than maxDepthHandrimPlaneDetection are ignored. 
+        The default is -1, which doesn't delete any value
+    minDepth : double, optional
+        during LSTSQ computation to detect the handrim, values closer 
+        than minDepth are ignored. 
+        The default is 0.
+    maxX : double, optional
+        during LSTSQ computation to detect the handrim, values of x bigger than 
+        maxX are ignored
+        The default is -1, which doesn't delete any value
+    minX : double, optional
+        during LSTSQ computation to detect the handrim, values of x smaller than 
+        maxY are ignored are ignored. 
+        The default is 0.
+    maxY : double, optional
+        during LSTSQ computation to detect the handrim, values of y bigger than 
+        maxY are ignored
+        The default is -1, which doesn't delete any value
+    minY : double, optional
+        during LSTSQ computation to detect the handrim, values of y smaller than 
+        maxY are ignored are ignored. 
+        The default is 0.
+    showPlot : boolean, optional
+        if plots are shown. The default is False
+    mainTitle : string, optional
+        title to be added to the plots
+    
+    Returns
+    -------
+    wc_img : array 1*2
+        x, y coordinates of the wheel on image 
+    hrc_img : array 1*3
+        x, y coordinates of the handrim on image + radius
+    centre_metric : array 1*3
+        x, y, z coordinates of the wheel on metric 
+    handrimPlane : hppdWC.geom.Plane3d object
+        plane where the handrim is laying.
+    dataHandrim : array n*3
+        contains x y z coordinates of the handrim, modeled as a circular crown
+
+    '''
+    assert fitPlaneMethod == 'LSTSQ' or fitPlaneMethod == 'RANSAC', \
+        f"fitPlaneMethod not valid, possible are LSTSQ or RANSAC, got: {fitPlaneMethod}"
+    dep_img = dep_img.astype('float')
+
+# =============================================================================
+#     #%%0.0 all possible handrims detection on rgb image
+# =============================================================================
+    circles = findCirclesOnImage(rgb_img, minDist = minDist,\
+    param1 = param1, param2 = param2, minRadius = minRadius, maxRadius = maxRadius)
+
+    # if only one circle is found, add another one so the structure is mantained
+    if len(circles)==1:
+        circles = np.append(circles, circles, axis=1)
+
+    circles_df = fromCirclesToCirclesDF(circles)
+    xc_hr, yc_hr, rhr_img = circles_df.mean(axis=0)
+
+    if showPlot:
+        plt.figure()
+        plt.grid()
+        plt.title(mainTitle + ' - detected handrim')
+        plt.imshow(plots.circlesOnImage(rgb_img, circles))
+
+# =============================================================================
+#     #%%1 wheel centre detection on rgb image
+# =============================================================================
+    image = rgb_img.copy()
+    image_h, image_w, _ = image.shape
+# =============================================================================
+#     #%%1.0 find lines on cropped image
+# =============================================================================
+    # initial guess of the area of interest according to the found handrims
+    # get the boundaries for crop
+    xmin = int(np.maximum(0, xc_hr - rhr_img/div))
+    xmax = int(np.minimum(xc_hr + rhr_img/div-10, image_w-1))
+    ymin = int(np.maximum(0, yc_hr - rhr_img/div))
+    ymax = int(np.minimum(yc_hr + rhr_img/div -20, image_h-1))
+
+    # crop the image
+    img = image[ymin : ymax + 1, xmin : xmax + 1]
+    img_h, img_w, _ = img.shape
+
+
+# =============================================================================
+#     #%%2.0 handrim detection on rgb image
+# =============================================================================
+    # pick the handrims whose x distance is minimum with respect to the centre of the wheel
+    circles_df_min_dist = circles_df[abs(circles_df['xc'] - xwc_img) == min(abs(circles_df['xc'] - xwc_img))]
+
+    # among, them pick the handrim with the greatest radius
+    circles_df_min_dist_biggest_radius = circles_df_min_dist[circles_df_min_dist['r'] == max(circles_df_min_dist['r'])]
+
+    # get parameters of the chosen one
+    xhrc_img = circles_df_min_dist_biggest_radius['xc'].iloc[0]
+    yhrc_img = circles_df_min_dist_biggest_radius['yc'].iloc[0]
+    rhrc_img = circles_df_min_dist_biggest_radius['r'].iloc[0]
+
+# =============================================================================
+#     #%%3 handrim plane detection on dep image
+# =============================================================================
+    image_h, image_w = dep_img.shape
+    xmask, ymask = np.meshgrid(np.arange(0, image_w, 1), np.arange(0, image_h, 1))
+# =============================================================================
+#     #%%3.0 extract 3D points for LSTSQ
+# =============================================================================
+    dep_image = dep_img.copy()
+    # remove invalid values
+    dep_image[dep_image <= 0] = np.nan
+    dep_image[dep_image>dep_threshold_plane_detection] = np.nan
+    # creating a mask of the area of interest (circular crown)
+    maskValidValues = abs(((xmask-xhrc_img)**2+(ymask-yhrc_img)**2-(rhrc_img)**2))<tolerance
+    # give nan values to all the pixel outside of the area of interest
+    dep_image[~maskValidValues] = np.nan
+
+    # find points of the mask in the real 3D world
+    pc = geom.convert_depth_frame_to_pointcloud_pp_ff(dep_image, ppx, ppy, fx, fy)
+    x,y,z = pc
+    data = np.transpose([x,y,z])
+    # # remove points outside the range
+    if not np.isnan(maxMinDepthHandrimPlaneDetection).all():
+        data[:,2][data[:,2]>maxMinDepthHandrimPlaneDetection[0]] = np.nan
+        data[:,2][data[:,2]<maxMinDepthHandrimPlaneDetection[1]] = np.nan
+    # if maxX > 0:
+    #     data[:,2][data[:,0]>maxX-ppx] = np.nan
+    # data[:,2][data[:,0]<minX-ppx] = np.nan
+    # if maxY > 0:
+    #     data[:,2][data[:,1]>maxY-ppy] = np.nan
+    # data[:,2][data[:,1]<minY-ppy] = np.nan
+    #remove nan rows
+    data = data[~np.isnan(data).any(axis=1)]
+
+    if showPlot:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection='3d')
+        ax.scatter(data[:,0],data[:,1],data[:,2],c=data[:,2], marker = '.')
+        ax.view_init(elev=-90, azim=-90)
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+
+    if showPlot:
+        highlightedImage = plots.highlightPartOfImage(image, maskValidValues, coeff = 0.7, colorNotInterest = [255, 255, 255])
+        handrim = circles[:,circles_df_min_dist_biggest_radius.index]
+        plt.figure()
+        plt.grid()
+        plt.title(mainTitle + ' - detected handrim')
+        plt.imshow(plots.circlesOnImage(highlightedImage, handrim))
+        plt.axvline(xwc_img, color = 'r')
+        plt.axhline(ywc_img, color = 'r')
+        plt.axhline(handrim[:,0,1], color = (0,1,0))
+
+        plots.orthogonalProjectionRCamView(data, flag = 'xyzdata', mainTitle = mainTitle + ' - available data')
+
+# =============================================================================
+#     #%%3.1 fit plane with least squares
+# =============================================================================
+    # data are expressed in the depth camera ref, not on top left
+    if fitPlaneMethod == 'LSTSQ':
+        coeffX, coeffY, constant, normal = geom.fitPlaneLSTSQ(data)
+    if fitPlaneMethod == 'RANSAC':
+        coeffX, coeffY, constant, normal = geom.fitPlaneRANSAC(data)
+    handrimPlane = geom.Plane3d(coeffX = coeffX, coeffY = coeffY, constant = constant)
+
+# =============================================================================
+#     #%%3.2 3D coordinates of the handrim, modeled as a 2D circular crown
+# =============================================================================
+    dep_image = dep_img.copy()
+    # creating a mask of the area of interest (circular crown)
+    maskValidValues = abs(((xmask-xhrc_img)**2+(ymask-yhrc_img)**2-(rhrc_img)**2))<tolerance
+    # give nan values to all the pixel outside of the area of interest
+    dep_image[~maskValidValues] = np.nan
+
+    # find dataHandrim in the real 3D world
+    pc = geom.convert_depth_frame_to_pointcloud_pp_ff(dep_image, ppx, ppy, fx, fy)
+    x,y,z = pc
+    dataHandrim = np.transpose([x,y,z])
+    #remove nans
+    dataHandrim = dataHandrim[~np.isnan(dataHandrim).any(axis=1)]
+    X = dataHandrim[:,0]
+    Y = dataHandrim[:,1]
+    Z = handrimPlane.findZ(X,Y)
+    dataHandrim = np.transpose(np.row_stack((X,Y,Z)))
+
+# =============================================================================
+#     #%%4.0 3D coordinates of the centres of the wheel and of the handrim
+# =============================================================================
+    # laying on the handrimPlane
+    x_centre_metric, y_centre_metric  = geom.convert_pixel_coord_to_metric_coordinate_pp_ff(xwc_img, ywc_img, ppx, ppy, fx, fy)
+    z_centre_metric = handrimPlane.findZ(x_centre_metric, y_centre_metric)
+
+# =============================================================================
+#     #%%5.0 pack outputs
+# =============================================================================
+    # 2D coordinates of wheel centre
+    wc_img = [xwc_img, ywc_img]
+    # 2D coordinates of handrim on the image + radius
+    hrc_img = [xhrc_img, yhrc_img, rhr_img]
+    # 3D coordinates of wheel centre in the real world
+    centre_metric = [x_centre_metric, y_centre_metric, z_centre_metric]
+
+
+    # the values of these two should be close to the real handrim in m
+    # np.nanmean(np.sqrt((dataHandrim[:,0]-centre_metric[0])**2+(dataHandrim[:,1]-centre_metric[1])**2))
+    # np.nanmean(np.sqrt((dataHandrim[:,0]-centre_metric[0])**2+(dataHandrim[:,1]-centre_metric[1])**2+(dataHandrim[:,2]-centre_metric[2])**2))
+
+    # to plot available data, the detected plane and the handrim circular crown
+    xmin = np.min(X)
+    xmax = np.max(X)
+    ymin = np.min(Y)
+    ymax = np.max(Y)
+
+    xx, yy = np.meshgrid(np.linspace(xmin, xmax, 100), np.linspace(ymin, ymax, 100))
+    #xx, yy = geom.convert_pixel_coord_to_metric_coordinate_pp_ff(xx, yy, ppx, ppy, fx, fy)
+    Zplane = handrimPlane.findZ(xx, yy)
+    dataPlane = np.transpose(np.row_stack((xx.flatten(),yy.flatten(), Zplane.flatten())))
+    if showPlot:
+        fig, ax = plots.orthogonalProjectionRCamView([data, dataPlane, dataHandrim, np.array([centre_metric])], \
+        flag = 'xyzdata', mainTitle = mainTitle + ' - final solution', alpha = 0.1, \
+        color_list = ['', 'k', '', 'r'])
+
+
+    return wc_img, hrc_img, centre_metric, handrimPlane, dataPlane
 def computeStatFeatures(array):
     '''
     Given an array, computes statistical features and returns them in a list

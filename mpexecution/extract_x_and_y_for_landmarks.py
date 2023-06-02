@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import sys
 vid=cv2.VideoCapture('D:\\002.mp4')
+
 landmark_ls=[[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,16],[17,18,19,20]]
 #landmark_ls=[[1]]
 #divides the video in frames and stores each frame in a list
@@ -77,5 +78,3 @@ for hand_lm in frame_lm:
     x_hlist.append(x_h)
     y_hlist.append(y_h)
     
-     
-              

@@ -7,7 +7,7 @@ Created on Mon Feb 27 15:25:09 2023
 
 import rosbag
 # please refer to http://docs.ros.org/en/lunar/api/rosbag/html/python/rosbag.bag.Bag-class.html
-filename = r'D:\01_raw\T002.bag'
+filename = r"C:\Users\giamp\OneDrive\Desktop\vid\prova3.bag"
 
 bag = rosbag.Bag(filename)
 
